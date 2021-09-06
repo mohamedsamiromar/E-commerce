@@ -8,13 +8,14 @@ from django.shortcuts import render, get_object_or_404
 from django.utils import timezone
 from rest_framework import status
 
-from project.models import Item, Order, OrderItem, Payment, Address, UserProfile
+from project.models import Item, Order, OrderItem, Payment, Address, UserProfile, Coupon
 
 from rest_framework.generics import ListCreateAPIView, RetrieveAPIView
 from .serializer import ItemSerializer, OrderSerializer
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
+
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
 
@@ -82,14 +83,11 @@ class PaymentView(APIView):
         shipping_address = Address.objects.get(id=shipping_address_id)
 
         if userprofile.stripe_customer_id != '' and userprofile.stripe_customer_id is not None:
-            customer = stripe.Customer.retrieve(
-                userprofile.stripe_customer_id)
+            customer = stripe.Customer.retrieve(userprofile.stripe_customer_id)
             customer.sources.create(source=token)
 
         else:
-            customer = stripe.Customer.create(
-                email=self.request.user.email,
-            )
+            customer = stripe.Customer.create(email=self.request.user.email,)
             customer.sources.create(source=token)
             userprofile.stripe_customer_id = customer['id']
             userprofile.one_click_purchasing = True
@@ -99,7 +97,7 @@ class PaymentView(APIView):
 
         try:
 
-                # charge the customer because we cannot charge the token more than once
+            # charge the customer because we cannot charge the token more than once
             charge = stripe.Charge.create(
                 amount=amount,  # cents
                 currency="usd",
@@ -162,10 +160,25 @@ class PaymentView(APIView):
         except stripe.error.StripeError as e:
             # Display a very generic error to the user, and maybe send
             # yourself an email
-            return Response({"message": "Something went wrong. You were not charged. Please try again."},  status=status.HTTP_400_BAD_REQUEST)
+            return Response({"message": "Something went wrong. You were not charged. Please try again."},
+                            status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
             # send an email to ourselves
-            return Response({"message": "A serious error occurred. We have been notifed."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"message": "A serious error occurred. We have been notifed."},
+                            status=status.HTTP_400_BAD_REQUEST)
 
         return Response({"message": "Invalid data received"}, status=HTTP_400_BAD_REQUEST)
+
+
+class AddCouponView(APIView):
+    def post(self, request):
+        code = request.data.get('code', None)
+        if code is None:
+            return Response({"message": "Invalid data received "}, status=status.HTTP_400_BAD_REQUEST)
+        order = Order.objects.get(user=request.user, ordered=False)
+        coupone = get_object_or_404(Coupon, code=code)
+        order.coupon = coupone
+        order.save()
+        return Response(status=status.HTTP_200_OK)
+

@@ -1,5 +1,6 @@
+from django_countries.fields import CountryField
 from rest_framework import serializers
-from project.models import Item, Order, OrderItem
+from project.models import Item, Order, OrderItem, Coupon, ItemVariation, Address, Variation
 
 
 class StringSerializer(serializers.StringRelatedField):
@@ -24,6 +25,37 @@ class ItemSerializer(serializers.ModelSerializer):
 
     def get_label(self, obj):
         return obj.get_label_display()
+
+
+class VariationDetailSerializer(serializers.ModelSerializer):
+    item = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Variation
+        fields = (
+            'id',
+            'name',
+            'item'
+        )
+
+    def get_item(self, obj):
+        return ItemSerializer(obj.item).data
+
+
+class ItemVariationDetailSerializer(serializers.ModelSerializer):
+    variation = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ItemVariation
+        fields = (
+            'id',
+            'value',
+            'attachment',
+            'variation'
+        )
+
+    def get_variation(self, obj):
+        return VariationDetailSerializer(obj.variation).data
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
@@ -64,3 +96,34 @@ class OrderSerializer(serializers.ModelSerializer):
 
     def get_total(self, obj):
         return obj.get_total()
+
+    def get_coupone(self, obj):
+        if obj.Coupon is not None:
+            return CouponSerializer(obj.Coupon)
+        return None
+
+
+class CouponSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Coupon
+        fields={
+            'id',
+            'code',
+            'amount'}
+
+
+class AddressSerializer(serializers.ModelSerializer):
+    country = CountryField()
+
+    class Meta:
+        model = Address
+        fields = (
+            'id',
+            'user',
+            'street_address',
+            'apartment_address',
+            'country',
+            'zip',
+            'address_type',
+            'default'
+        )
