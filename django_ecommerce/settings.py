@@ -15,7 +15,6 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
@@ -26,7 +25,6 @@ SECRET_KEY = 'django-insecure-y4u2g2my17l@^-s=ccn#by0r$jm)#yw6)4mqxa*bs&nynz#_$u
 DEBUG = True
 
 ALLOWED_HOSTS = []
-
 
 # Application definition
 
@@ -41,7 +39,6 @@ INSTALLED_APPS = [
     'django.contrib.sites',
     'rest_framework',
     'rest_framework.authtoken',
-    'str'
 
     'allauth',
     'allauth.account',
@@ -79,7 +76,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'django_ecommerce.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
@@ -93,7 +89,6 @@ DATABASES = {
         'PORT': '3306',
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
@@ -113,7 +108,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/3.2/topics/i18n/
 
@@ -127,7 +121,6 @@ USE_L10N = True
 
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
@@ -138,16 +131,12 @@ STATIC_URL = '/static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
     'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
 SITE_ID = 1
-
-
-
 
 ACCOUNT_EMAIL_REQUIRED = False
 ACCOUNT_AUTHENTICATION_METHOD = 'username'
@@ -156,5 +145,5 @@ ACCOUNT_EMAIL_VERIFICATION = 'none'
 from decouple import config
 # Stripe
 
-STRIPE_PUBLIC_KEY = config('STRIPE_TEST_PUBLIC_KEY')
-STRIPE_SECRET_KEY = config('STRIPE_TEST_SECRET_KEY')
+# STRIPE_PUBLIC_KEY = config('STRIPE_TEST_PUBLIC_KEY')
+# STRIPE_SECRET_KEY = config('STRIPE_TEST_SECRET_KEY')

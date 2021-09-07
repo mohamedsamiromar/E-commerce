@@ -1,6 +1,6 @@
-from django_countries.fields import CountryField
+from django_countries.serializer_fields import CountryField
 from rest_framework import serializers
-from project.models import Item, Order, OrderItem, Coupon, ItemVariation, Address, Variation
+from project.models import Item, Order, OrderItem, Coupon, Address
 
 
 class StringSerializer(serializers.StringRelatedField):
@@ -25,37 +25,6 @@ class ItemSerializer(serializers.ModelSerializer):
 
     def get_label(self, obj):
         return obj.get_label_display()
-
-
-class VariationDetailSerializer(serializers.ModelSerializer):
-    item = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Variation
-        fields = (
-            'id',
-            'name',
-            'item'
-        )
-
-    def get_item(self, obj):
-        return ItemSerializer(obj.item).data
-
-
-class ItemVariationDetailSerializer(serializers.ModelSerializer):
-    variation = serializers.SerializerMethodField()
-
-    class Meta:
-        model = ItemVariation
-        fields = (
-            'id',
-            'value',
-            'attachment',
-            'variation'
-        )
-
-    def get_variation(self, obj):
-        return VariationDetailSerializer(obj.variation).data
 
 
 class OrderItemSerializer(serializers.ModelSerializer):

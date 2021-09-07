@@ -10,13 +10,15 @@ from rest_framework import status
 
 from project.models import Item, Order, OrderItem, Payment, Address, UserProfile, Coupon
 
-from rest_framework.generics import ListCreateAPIView, RetrieveAPIView
-from .serializer import ItemSerializer, OrderSerializer
+from rest_framework.generics import ListCreateAPIView, RetrieveAPIView, CreateAPIView, UpdateAPIView, DestroyAPIView, \
+    ListAPIView
+from .serializer import ItemSerializer, OrderSerializer, AddressSerializer
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
-stripe.api_key = settings.STRIPE_SECRET_KEY
+
+# stripe.api_key = settings.STRIPE_SECRET_KEY
 
 
 class ItemViewListCreate(ListCreateAPIView):
@@ -87,7 +89,7 @@ class PaymentView(APIView):
             customer.sources.create(source=token)
 
         else:
-            customer = stripe.Customer.create(email=self.request.user.email,)
+            customer = stripe.Customer.create(email=self.request.user.email, )
             customer.sources.create(source=token)
             userprofile.stripe_customer_id = customer['id']
             userprofile.one_click_purchasing = True
@@ -182,3 +184,31 @@ class AddCouponView(APIView):
         order.save()
         return Response(status=status.HTTP_200_OK)
 
+
+class AddressListView(ListAPIView):
+    permission_classes = (IsAuthenticated,)
+    serializer_class = AddressSerializer
+
+    def get_queryset(self):
+        address_type = self.request.query_params.get('address_type', None)
+        qs = Address.objects.all()
+        if address_type is None:
+            return qs
+        return qs.filter(user=self.request.user, address_type=address_type)
+
+
+class AddressCreateView(CreateAPIView):
+    permission_classes = (IsAuthenticated,)
+    serializer_class = AddressSerializer
+    queryset = Address.objects.all()
+
+
+class AddressUpdateView(UpdateAPIView):
+    permission_classes = (IsAuthenticated,)
+    serializer_class = AddressSerializer
+    queryset = Address.objects.all()
+
+
+class AddressDeleteView(DestroyAPIView):
+    permission_classes = (IsAuthenticated,)
+    queryset = Address.objects.all()
