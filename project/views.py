@@ -18,7 +18,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 
 
-# stripe.api_key = settings.STRIPE_SECRET_KEY
+stripe.api_key = settings.STRIPE_SECRET_KEY
 
 
 class ItemViewListCreate(ListCreateAPIView):
@@ -169,8 +169,6 @@ class PaymentView(APIView):
             # send an email to ourselves
             return Response({"message": "A serious error occurred. We have been notifed."},
                             status=status.HTTP_400_BAD_REQUEST)
-
-        return Response({"message": "Invalid data received"}, status=HTTP_400_BAD_REQUEST)
 
 
 class AddCouponView(APIView):
