@@ -167,8 +167,7 @@ class PaymentView(APIView):
 
         except Exception as e:
             # send an email to ourselves
-            return Response({"message": "A serious error occurred. We have been notifed."},
-                            status=status.HTTP_400_BAD_REQUEST)
+            return Response({"message": "A serious error occurred. We have been notifed."},status=status.HTTP_400_BAD_REQUEST)
 
 
 class AddCouponView(APIView):
