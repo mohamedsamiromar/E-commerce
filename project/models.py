@@ -1,3 +1,4 @@
+from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.conf import settings
 from django.db import models
@@ -8,7 +9,7 @@ from django_countries.fields import CountryField
 
 class UserProfile(models.Model):
     user = models.OneToOneField(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+      User, on_delete=models.CASCADE)
     stripe_customer_id = models.CharField(max_length=50, blank=True, null=True)
     one_click_purchasing = models.BooleanField(default=False)
 
@@ -20,8 +21,6 @@ class Item(models.Model):
     title = models.CharField(max_length=100)
     price = models.FloatField()
     discount_price = models.FloatField(blank=True, null=True)
-    category = models.CharField(choices=CATEGORY_CHOICES, max_length=2)
-    label = models.CharField(choices=LABEL_CHOICES, max_length=1)
     slug = models.SlugField()
     description = models.TextField()
     image = models.ImageField()
@@ -46,11 +45,9 @@ class Item(models.Model):
 
 
 class OrderItem(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL,
-                             on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
     ordered = models.BooleanField(default=False)
     item = models.ForeignKey(Item, on_delete=models.CASCADE)
-    item_variations = models.ManyToManyField(ItemVariation)
     quantity = models.IntegerField(default=1)
 
     def __str__(self):
@@ -64,8 +61,8 @@ class OrderItem(models.Model):
 
 
 class Order(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL,
-                             on_delete=models.CASCADE)
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE)
     ref_code = models.CharField(max_length=20, blank=True, null=True)
     items = models.ManyToManyField(OrderItem)
     start_date = models.DateTimeField(auto_now_add=True)
@@ -97,13 +94,12 @@ class Order(models.Model):
 
 
 class Address(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL,
-                             on_delete=models.CASCADE)
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE)
     street_address = models.CharField(max_length=100)
     apartment_address = models.CharField(max_length=100)
     country = CountryField(multiple=False)
     zip = models.CharField(max_length=100)
-    address_type = models.CharField(max_length=1, choices=ADDRESS_CHOICES)
     default = models.BooleanField(default=False)
 
     def __str__(self):
@@ -115,8 +111,8 @@ class Address(models.Model):
 
 class Payment(models.Model):
     stripe_charge_id = models.CharField(max_length=50)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL,
-                             on_delete=models.SET_NULL, blank=True, null=True)
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE)
     amount = models.FloatField()
     timestamp = models.DateTimeField(auto_now_add=True)
 
@@ -137,4 +133,4 @@ def userprofile_receiver(sender, instance, created, *args, **kwargs):
         userprofile = UserProfile.objects.create(user=instance)
 
 
-post_save.connect(userprofile_receiver, sender=settings.AUTH_USER_MODEL)
+post_save.connect(userprofile_receiver, sender=User)

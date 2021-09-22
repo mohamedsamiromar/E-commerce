@@ -20,7 +20,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 
 
-stripe.api_key = settings.STRIPE_SECRET_KEY
+# stripe.api_key = settings.STRIPE_SECRET_KEY
 
 
 class ItemViewListCreate(ListCreateAPIView):
