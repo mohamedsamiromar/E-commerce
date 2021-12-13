@@ -43,3 +43,10 @@ python manage.py runserver
 **Note** if you want payments to work you will need to enter your own Stripe API keys into the `.env` file in the settings files.
 
 ---
+
+
+
+
+## Contributions are welcome!
+greatly appreciate your help. Feel free to suggest and implement improvements.
+
