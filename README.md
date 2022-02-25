@@ -3,9 +3,9 @@
 
 ## Project Summary
 
-The website displays products. Users can add and remove products to/from their cart while also specifying the quantity of each item. They can then enter their address and choose Stripe to handle the payment processing.
+* The website displays products. Users can add and remove products to/from their cart while also specifying the quantity of each item. They can then enter their address and choose Stripe to handle the payment processing.
 
-
+* 🛒 This is a simple e-commerce API based on Django & Django REST Framework .
 
 
 ## Running this project
