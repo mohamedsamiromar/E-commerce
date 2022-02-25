@@ -7,6 +7,11 @@
 
 * 🛒 This is a simple e-commerce API based on Django & Django REST Framework .
 
+## :triangular_flag_on_post: Features
+
+- Django 3.0.9
+- Django Rest
+-  Stripe payment gateway
 
  ## Setup & Launch 🚀
 
