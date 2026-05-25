@@ -1,1 +1,1 @@
-web: gunicorn single_page_app_kafka.wsgi --log-file -
+web: gunicorn django_ecommerce.wsgi --log-file -
