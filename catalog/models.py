@@ -13,6 +13,12 @@ class Category(models.Model):
 
 
 class Item(models.Model):
+    merchant = models.ForeignKey(
+        'merchants.MerchantProfile',
+        on_delete=models.SET_NULL,
+        blank=True, null=True,
+        related_name='products',
+    )
     category = models.ForeignKey(
         Category, on_delete=models.SET_NULL, blank=True, null=True, related_name='items'
     )
@@ -25,6 +31,7 @@ class Item(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     in_stock = models.BooleanField(default=True)
+    stock_qty = models.PositiveIntegerField(null=True, blank=True)
 
     def __str__(self):
         return self.title

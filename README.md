@@ -20,6 +20,7 @@ A production-ready REST API for an e-commerce platform built with **Django 4.2**
   - [Payments](#payments)
   - [Coupons](#coupons)
   - [Addresses](#addresses)
+  - [Merchant Dashboard](#merchant-dashboard)
 - [Payment Integration](#payment-integration)
 - [Running Tests](#running-tests)
 - [Project Structure](#project-structure)
@@ -34,6 +35,7 @@ A production-ready REST API for an e-commerce platform built with **Django 4.2**
 - **Coupon System** — Discount codes with expiry dates and active/inactive toggle
 - **Multi-Gateway Payments** — Stripe, PayPal, Apple Pay, Google Pay via a gateway factory pattern
 - **Address Management** — Multiple shipping/billing addresses per user
+- **Merchant Dashboard** — Approved merchants manage their own products, orders, coupons, and analytics via isolated APIs
 - **Token Authentication** — DRF token auth + django-allauth session auth
 - **Dockerised** — Runs with a single `docker compose up`
 - **CI/CD** — GitHub Actions pipeline with a real PostgreSQL service
@@ -42,26 +44,29 @@ A production-ready REST API for an e-commerce platform built with **Django 4.2**
 
 ## Architecture
 
-The codebase is split into five focused Django apps. Each app owns its domain end-to-end.
+The codebase is split into six focused Django apps. Each app owns its domain end-to-end.
 
 ```text
-catalog/    →  Category, Item                      (product catalogue)
-accounts/   →  UserProfile, Address                (users & addresses)
-coupons/    →  Coupon, CouponService               (discount codes)
-payments/   →  Payment, PaymentService, gateways   (payment processing)
-orders/     →  OrderItem, Order, CartService       (cart & order lifecycle)
+catalog/    →  Category, Item                                  (product catalogue)
+accounts/   →  UserProfile, Address                            (users & addresses)
+coupons/    →  Coupon, CouponService                           (discount codes)
+payments/   →  Payment, PaymentService, gateways               (payment processing)
+orders/     →  OrderItem, Order, CartService                   (cart & order lifecycle)
+merchants/  →  MerchantProfile, MerchantOrderFulfillment       (merchant dashboard)
 ```
 
 **Dependency flow** (no circular imports):
 
 ```text
-catalog  ──────────────────────────────────────┐
-accounts ──────────────────────────────────────┤
-payments ──────────────────────────────────────┼──▶  orders
-coupons  ──────────────────────────────────────┘
+catalog   ──────────────────────────────────────┐
+accounts  ──────────────────────────────────────┤
+payments  ──────────────────────────────────────┼──▶  orders
+coupons   ──────────────────────────────────────┘
+                                                 ▲
+catalog / coupons / orders ─────────────────────▶  merchants
 ```
 
-`orders` models reference the other four apps via Django string labels (`'catalog.Item'`, `'accounts.Address'`, etc.) — no Python-level circular imports.
+`orders` models reference the other four apps via Django string labels (`'catalog.Item'`, `'accounts.Address'`, etc.) — no Python-level circular imports. `merchants` similarly references `catalog`, `coupons`, and `orders` by string label.
 
 ---
 
@@ -395,6 +400,137 @@ Coupon codes are validated against `active`, `valid_from`, and `valid_to` fields
 
 ---
 
+### Merchant Dashboard
+
+All merchant endpoints are under `/api/merchant/` and require an approved merchant account. Every request must include an auth token. Non-merchant users receive `403 Forbidden`.
+
+**Becoming a merchant:** A Django admin sets `is_approved = True` on the user's `MerchantProfile` via the admin panel. There is no self-approval endpoint by design.
+
+#### Profile
+
+```http
+GET   /api/merchant/profile/
+PATCH /api/merchant/profile/
+Authorization: Token <token>
+```
+
+```json
+{
+  "id": 1,
+  "store_name": "Tech Haven",
+  "store_slug": "tech-haven",
+  "description": "Premium electronics and gadgets.",
+  "logo": null,
+  "is_approved": true,
+  "created_at": "2024-01-10T09:00:00Z"
+}
+```
+
+#### Products
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/merchant/products/` | List own products |
+| `POST` | `/api/merchant/products/` | Create a product |
+| `GET` | `/api/merchant/products/<slug>/` | Retrieve a product |
+| `PATCH` | `/api/merchant/products/<slug>/` | Update a product |
+| `DELETE` | `/api/merchant/products/<slug>/` | Delete a product |
+| `GET` | `/api/merchant/categories/` | List all categories (read-only) |
+
+**Create / update body:**
+```json
+{
+  "title": "Wireless Headphones Pro",
+  "slug": "wireless-headphones-pro",
+  "description": "40-hour battery, ANC",
+  "price": 129.99,
+  "discount_price": 99.99,
+  "category_id": 1,
+  "in_stock": true,
+  "stock_qty": 50
+}
+```
+
+#### Orders
+
+Merchants see only the orders that contain at least one of their products. The response shows only their items within each order, not other merchants' items.
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/merchant/orders/` | List relevant orders |
+| `GET` | `/api/merchant/orders/<ref_code>/` | Order detail (merchant's items only) |
+| `PATCH` | `/api/merchant/orders/<ref_code>/fulfill/` | Update fulfillment status |
+
+**Fulfill body:**
+```json
+{
+  "status": "shipped",
+  "tracking_number": "1Z999AA10123456784"
+}
+```
+
+`status` values: `pending` → `processing` → `shipped` → `delivered` → `cancelled`
+
+**Order detail response:**
+```json
+{
+  "id": 12,
+  "ref_code": "A1B2C3D4E5F6",
+  "customer": "john_doe",
+  "my_items": [
+    { "id": 5, "title": "Wireless Headphones Pro", "quantity": 2, "unit_price": 99.99, "final_price": 199.98 }
+  ],
+  "my_subtotal": 199.98,
+  "fulfillment": { "status": "shipped", "tracking_number": "1Z999AA10123456784", "updated_at": "2024-01-16T08:00:00Z" },
+  "ordered_date": "2024-01-15T12:00:00Z"
+}
+```
+
+#### Merchant Coupons
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/merchant/coupons/` | List own coupons |
+| `POST` | `/api/merchant/coupons/` | Create a coupon |
+| `GET` | `/api/merchant/coupons/<id>/` | Retrieve a coupon |
+| `PATCH` | `/api/merchant/coupons/<id>/` | Update a coupon |
+| `DELETE` | `/api/merchant/coupons/<id>/` | Delete a coupon |
+
+**Create body:**
+```json
+{
+  "code": "TECHSAVE20",
+  "amount": 20.00,
+  "active": true,
+  "valid_from": "2024-02-01T00:00:00Z",
+  "valid_to": "2024-02-28T23:59:59Z"
+}
+```
+
+#### Analytics
+
+```http
+GET /api/merchant/analytics/
+Authorization: Token <token>
+```
+
+```json
+{
+  "total_revenue": 4250.00,
+  "orders_count": 38,
+  "pending_orders": 5,
+  "products_count": 12,
+  "low_stock_products": [
+    { "id": 3, "title": "USB-C Hub", "slug": "usb-c-hub", "stock_qty": 2 }
+  ],
+  "top_products": [
+    { "id": 1, "title": "Wireless Headphones Pro", "slug": "wireless-headphones-pro", "units_sold": 47 }
+  ]
+}
+```
+
+---
+
 ## Payment Integration
 
 ### Adding a new payment gateway
@@ -437,6 +573,7 @@ python manage.py test orders
 python manage.py test payments
 python manage.py test coupons
 python manage.py test accounts
+python manage.py test merchants
 
 # With verbosity
 python manage.py test --verbosity=2
@@ -498,6 +635,24 @@ E-commerce/
 │   ├── urls.py
 │   ├── admin.py
 │   ├── tests.py
+│   └── migrations/
+│
+├── merchants/              # Merchant dashboard
+│   ├── models.py           #   MerchantProfile, MerchantOrderFulfillment
+│   ├── permissions.py      #   IsMerchant
+│   ├── admin.py
+│   ├── urls.py
+│   ├── serializers/
+│   │   ├── profile.py
+│   │   ├── products.py
+│   │   ├── orders.py
+│   │   └── coupons.py
+│   ├── views/
+│   │   ├── profile.py
+│   │   ├── products.py
+│   │   ├── orders.py
+│   │   ├── coupons.py
+│   │   └── analytics.py
 │   └── migrations/
 │
 ├── django_ecommerce/       # Project config

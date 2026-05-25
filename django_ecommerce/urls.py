@@ -13,4 +13,6 @@ urlpatterns = [
     path('api/payments/', include('payments.urls')),
     path('api/accounts/', include('accounts.urls')),
     path('api/coupons/', include('coupons.urls')),
+    # Merchant dashboard
+    path('api/merchant/', include('merchants.urls')),
 ]

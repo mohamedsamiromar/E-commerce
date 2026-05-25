@@ -3,6 +3,12 @@ from django.utils import timezone
 
 
 class Coupon(models.Model):
+    merchant = models.ForeignKey(
+        'merchants.MerchantProfile',
+        on_delete=models.CASCADE,
+        blank=True, null=True,
+        related_name='coupons',
+    )
     code = models.CharField(max_length=15, unique=True)
     amount = models.FloatField()
     active = models.BooleanField(default=True)
